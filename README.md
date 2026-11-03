@@ -4,3 +4,4 @@ Alice da Cruz Justi
 Beatriz Sartor Perego
 Rafael Cechinel Pacheco
 Wesllen Comel Vargas
+Vinicius Ronchi
