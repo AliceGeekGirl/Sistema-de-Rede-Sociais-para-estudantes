@@ -23,49 +23,49 @@ Estudantes interessados em compartilhar conhecimentos e materiais.
 
 4.1 Funcionalidades disponíveis
 
-Cadastro e perfil de usuário
+- Cadastro e perfil de usuário;
 
-Cadastro de usuários com nome, e-mail, senha e informações acadêmicas.
+- Cadastro de usuários com nome, e-mail, senha e informações acadêmicas;
 
-Identificação da instituição, curso e fase do estudante.
+- Identificação da instituição, curso e fase do estudante;
 
-Edição das informações do perfil.
+- Edição das informações do perfil;
 
-Publicações e interação social
+- Publicações e interação social;
 
-Criação de publicações com textos e conteúdos.
+- Criação de publicações com textos e conteúdos;
 
-Visualização de publicações em um feed.
+- Visualização de publicações em um feed;
 
-Curtidas e comentários.
+- Curtidas e comentários;
 
-Possibilidade de seguir outros usuários.
+- Possibilidade de seguir outros usuários;
 
-Perguntas e respostas
+- Perguntas e respostas;
 
-Publicação de dúvidas acadêmicas.
+- Publicação de dúvidas acadêmicas;
 
-Associação de perguntas a disciplinas.
+- Associação de perguntas a disciplinas;
 
-Respostas às dúvidas publicadas por outros estudantes.
+- Respostas às dúvidas publicadas por outros estudantes;
 
-Grupos de estudo
+- Grupos de estudo;
 
-Criação de grupos de estudo.
+- Criação de grupos de estudo;
 
-Entrada e participação de usuários nos grupos.
+- Entrada e participação de usuários nos grupos;
 
-Organização de estudantes por interesses acadêmicos.
+- Organização de estudantes por interesses acadêmicos;
 
-Mensagens privadas
+- Mensagens privadas;
 
-Envio e recebimento de mensagens entre usuários.
+- Envio e recebimento de mensagens entre usuários;
 
-Compartilhamento de materiais
+- Compartilhamento de materiais;
 
-Cadastro e compartilhamento de materiais de estudo.
+- Cadastro e compartilhamento de materiais de estudo;
 
-Associação dos materiais às respectivas disciplinas.
+- Associação dos materiais às respectivas disciplinas.
 
 
 5. Regras de negócio
