@@ -55,13 +55,19 @@ O projeto também contempla a aplicação das três primeiras formas normais (1F
 
 A estrutura planejada para organizar os arquivos do projeto é:
 
-xxxxxx 
+```text
+uniconnect/
+├── docs/                  # Diagrama Entidade-Relacionamento (DER) e documentação do projeto
+├── scripts/
+│   ├── ddl.sql            # Criação das 14 tabelas, chaves e restrições
+│   ├── dml.sql            # Inserção dos registros iniciais para testes
+│   └── views.sql          # Visões (views) e consultas de demonstração
+└── README.md              # Apresentação e documentação geral do repositório
 
 *Observação: a estrutura será preenchida gradualmente conforme o desenvolvimento das etapas do projeto.*
 
 
 ## Referências
 
-xxx
-xxx
-xxx
+* MICROSOFT. *Documentação do SQL Server e Transact-SQL (T-SQL)*. Disponível em: [https://learn.microsoft.com/pt-br/sql/](https://learn.microsoft.com/pt-br/sql/)
+* MICROSOFT. *SQL Server Management Studio (SSMS)*. Disponível em: [https://learn.microsoft.com/pt-br/sql/ssms/](https://learn.microsoft.com/pt-br/sql/ssms/)
