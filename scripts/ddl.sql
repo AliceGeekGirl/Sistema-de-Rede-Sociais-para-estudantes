@@ -231,3 +231,5 @@ CONSTRAINT fk_material_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_u
 CONSTRAINT fk_material_disciplina FOREIGN KEY (id_disciplina) REFERENCES disciplina (id_disciplina) -- Liga o material à disciplina correspondente (FK)
 );
 GO
+
+
