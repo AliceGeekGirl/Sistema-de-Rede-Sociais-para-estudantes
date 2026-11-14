@@ -63,6 +63,7 @@ uniconnect/
 │   ├── dml.sql            # Inserção dos registros iniciais para testes
 │   └── views.sql          # Visões (views) e consultas de demonstração
 └── README.md              # Apresentação e documentação geral do repositório
+```
 
 *Observação: a estrutura será preenchida gradualmente conforme o desenvolvimento das etapas do projeto.*
 
