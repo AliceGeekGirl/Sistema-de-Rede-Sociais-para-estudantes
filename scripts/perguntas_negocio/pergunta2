@@ -1,3 +1,72 @@
+CREATE OR ALTER PROCEDURE dbo.sp_participacao_grupos
+	@data_inicio DATE,
+	@data_fim DATE,
+	@id_grupo INT = NULL
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	-- -----------------------------------------------------------------
+	-- PARTE 1: validação dos parâmetros
+	-- -----------------------------------------------------------------
+
+	-- As duas datas do período são obrigatórias
+	IF @data_inicio IS NULL OR @data_fim IS NULL
+		THROW 50001, 'Informe a data inicial e a data final do período.', 1;
+
+	-- A data inicial não pode ser depois da data final
+	IF @data_inicio > @data_fim
+		THROW 50002, 'A data inicial não pode ser maior que a data final.', 1;
+
+	-- Se foi informado um grupo, ele precisa existir
+	IF @id_grupo IS NOT NULL AND NOT EXISTS (SELECT 1 FROM grupo_estudo WHERE id_grupo = @id_grupo)
+		THROW 50003, 'O grupo de estudo informado não existe.', 1;
+
+	-- -----------------------------------------------------------------
+	-- PARTE 2: ajuste da data final
+	-- -----------------------------------------------------------------
+
+	-- data_entrada é DATETIME (tem hora). Se comparar direto com a data final,
+	-- quem entrou no último dia depois de 00:00 fica de fora. Por isso a busca
+	-- vai até o início do dia seguinte (sem incluir ele).
+	DECLARE @data_limite DATETIME = DATEADD(DAY, 1, CAST(@data_fim AS DATETIME));
+
+	-- -----------------------------------------------------------------
+	-- PARTE 3: consulta da participação nos grupos
+	-- -----------------------------------------------------------------
+
+	SELECT
+		g.id_grupo,
+		g.nome AS nome_grupo,
+		u.id_usuario,
+		u.nome AS nome_estudante,
+		u.nome_usuario,
+		c.nome AS curso,
+		u.fase,
+		pg.data_entrada,
+
+		-- Mostra se o estudante foi quem criou o grupo
+		CASE WHEN g.id_criador = u.id_usuario THEN 'Sim' ELSE 'Não' END AS criador_do_grupo,
+
+		-- Quantos estudantes entraram nesse grupo dentro do período (Window Function)
+		COUNT(*) OVER (PARTITION BY g.id_grupo) AS entradas_no_periodo,
+
+		-- Total de membros do grupo, sem considerar o período
+		(SELECT COUNT(*) FROM participante_grupo pg2 WHERE pg2.id_grupo = g.id_grupo) AS total_membros_grupo
+
+	FROM participante_grupo pg
+	INNER JOIN grupo_estudo g ON g.id_grupo = pg.id_grupo
+	INNER JOIN usuario u ON u.id_usuario = pg.id_usuario
+	INNER JOIN curso c ON c.id_curso = u.id_curso
+	WHERE pg.data_entrada >= @data_inicio
+	  AND pg.data_entrada < @data_limite
+	  AND (@id_grupo IS NULL OR pg.id_grupo = @id_grupo)
+
+	-- Grupos com mais entradas no período aparecem primeiro
+	ORDER BY entradas_no_periodo DESC, g.id_grupo, pg.data_entrada;
+END
+GO
+
 -- PERGUNTA DE NEGÓCIO 2:
 -- Quais grupos de estudo tiveram mais estudantes ativos (que publicaram ou comentaram) durante o mês de outubro de 2026?
 
