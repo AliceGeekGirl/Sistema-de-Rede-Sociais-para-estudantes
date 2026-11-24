@@ -57,12 +57,17 @@ A estrutura planejada para organizar os arquivos do projeto é:
 
 ```text
 uniconnect/
-├── docs/                  # Diagrama Entidade-Relacionamento (DER) e documentação do projeto
+├── docs/                           # Escopo e regras do projeto
+├── modelo_fisico/                  # Diagrama Entidade-Relacionamento (DER) 
 ├── scripts/
-│   ├── ddl.sql            # Criação das 14 tabelas, chaves e restrições
-│   ├── dml.sql            # Inserção dos registros iniciais para testes
-│   └── views.sql          # Visões (views) e consultas de demonstração
-└── README.md              # Apresentação e documentação geral do repositório
+│   ├── ddl.sql/                    
+|       └── funcao/                 # Função (function) de engajamento
+|       └── procedure/              # Procedimentos (stored procedure) dos grupos de estudos
+|       └── tabelas/                # Criação das 14 tabelas, chaves e restrições
+|       └── visualizacoes/          # Visões (views) e consultas de demonstração     
+│   ├── dml.sql/                    # Inserção dos registros iniciais para testes
+│   ├── perguntas_negocio/          # 6 Perguntas de Negócio     
+└── README.md                       # Apresentação e documentação geral do repositório
 ```
 
 *Observação: a estrutura será preenchida gradualmente conforme o desenvolvimento das etapas do projeto.*
