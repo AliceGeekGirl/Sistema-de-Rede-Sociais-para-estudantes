@@ -47,3 +47,4 @@ SELECT
     conteudo, 
     dbo.fn_engajamento(id_publicacao) AS total_engajamento
 FROM publicacao;
+GO
