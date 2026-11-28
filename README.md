@@ -57,6 +57,7 @@ A estrutura planejada para organizar os arquivos do projeto é:
 
 ```text
 uniconnect/
+├── crud/                           # Interface gráfica em Python para o CRUD de instituições
 ├── docs/                           # Escopo e regras do projeto
 ├── modelo_fisico/                  # Diagrama Entidade-Relacionamento (DER) 
 ├── scripts/
