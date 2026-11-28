@@ -73,6 +73,57 @@ uniconnect/
 *Observação: a estrutura será preenchida gradualmente conforme o desenvolvimento das etapas do projeto.*
 
 
+## Como executar o CRUD de instituições
+
+O CRUD permite listar, cadastrar, editar e excluir registros da tabela `instituicao` por meio de uma interface gráfica feita em Python. Todas as operações no banco são feitas pelas stored procedures do arquivo `scripts/ddl/procedure/sp_instituicao.sql`.
+
+### Passo 1 – Preparar o computador
+- Ter o **SQL Server** e o **SQL Server Management Studio (SSMS)** instalados.
+- Ter o **Python 3** instalado (pela Microsoft Store ou pelo site [python.org](https://www.python.org/downloads/)).
+- Baixar este repositório: botão **Code → Download ZIP** e extrair a pasta.
+
+### Passo 2 – Criar o banco de dados
+No SSMS, conectar no servidor e executar:
+```sql
+CREATE DATABASE BD2Trabalho;
+```
+Depois, selecionar o banco **BD2Trabalho** na caixa de seleção da barra de ferramentas.
+
+### Passo 3 – Criar as tabelas
+Abrir e executar (F5) o arquivo `scripts/ddl/tabelas/tabelas.sql`.
+
+### Passo 4 – Popular as tabelas
+Abrir e executar (F5) o arquivo `scripts/dml/popula_tabelas.sql`.
+
+### Passo 5 – Criar as procedures do CRUD
+Abrir e executar (F5) o arquivo `scripts/ddl/procedure/sp_instituicao.sql`.
+
+### Passo 6 – Instalar a biblioteca de conexão (somente na primeira vez)
+No Prompt de Comando:
+```
+python -m pip install pyodbc
+```
+
+### Passo 7 – Abrir o CRUD
+No Prompt de Comando, entrar na pasta `crud` do projeto e executar:
+```
+python crud_instituicao.py
+```
+
+### Passo 8 – Conectar ao banco
+Na tela de conexão, conferir o **Servidor** e o **Banco** (os mesmos usados no SSMS, por exemplo `localhost\SQLEXPRESS` e `BD2Trabalho`) e clicar em **Conectar**. Deixando usuário e senha em branco, a conexão usa o login do Windows.
+
+### Problemas comuns
+
+| Problema | Solução |
+|---|---|
+| `Python was not found` | Usar `py` ou `python3.12` no lugar de `python`, ou ativar o Python em *Configurações → Aplicativos → Configurações avançadas de aplicativos → Aliases de execução de aplicativo*. |
+| Mensagem "Biblioteca não instalada" | Executar o passo 6. |
+| "Erro de conexão" | Conferir se o SQL Server está ligado e se o servidor e o banco estão iguais aos do SSMS. |
+| Erro ao carregar a lista de instituições | Executar o passo 5 (as procedures não foram criadas no banco). |
+| "Nome de objeto inválido" no SSMS | Conferir se o banco selecionado é o **BD2Trabalho**, e não o `master`. |
+
+
 ## Referências
 
 * MICROSOFT. *Documentação do SQL Server e Transact-SQL (T-SQL)*. Disponível em: [https://learn.microsoft.com/pt-br/sql/](https://learn.microsoft.com/pt-br/sql/)
