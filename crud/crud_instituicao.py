@@ -3,21 +3,34 @@
 CRUD de Instituições - UniConnect
 
 Interface gráfica para cadastrar, editar, excluir e listar instituições
-(tabela instituicao).
+(tabela instituicao), ligada ao banco SQL Server do projeto.
+
+Antes de executar:
+	1. Rodar no SSMS o script scripts/ddl/procedure/sp_instituicao.sql
+	   (cria as procedures usadas por este programa).
+	2. Instalar a biblioteca de conexão com o SQL Server:
+	   python -m pip install pyodbc
 
 Como executar:
 	python crud_instituicao.py
 
+	Ao abrir, aparece a tela de conexão com o servidor e o banco já
+	preenchidos. Se no computador o nome for diferente, é só trocar ali.
+
 Organização do código:
-	1. Dados: classe que guarda e altera as instituições.
-	   Nesta etapa (issue 19) os dados ficam em memória, só para testar a
-	   tela. Na próxima etapa (issue 20) essa classe será trocada por uma
-	   que chama as procedures do SQL Server.
-	2. Tela: classe que monta a janela (formulário, botões e listagem) e
-	   chama a classe de dados quando o usuário clica nos botões.
+	1. Configuração: valores que já vêm preenchidos na tela de conexão.
+	2. Dados: classe que chama as procedures do banco (listar, inserir,
+	   atualizar e excluir). O programa não escreve INSERT, UPDATE ou DELETE,
+	   ele só chama as procedures.
+	3. Tela de conexão: janela que aparece ao abrir o programa, para
+	   informar o servidor e o banco.
+	4. Tela do CRUD: classe que monta a janela (formulário, botões e
+	   listagem) e chama a classe de dados quando o usuário clica nos botões.
 =============================================================================
 """
 
+import os
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -31,45 +44,159 @@ ESTADOS = [
 
 
 # =============================================================================
-# 1. DADOS (temporário, em memória)
+# 1. CONFIGURAÇÃO DA CONEXÃO
 # =============================================================================
-class DadosMemoria:
-	"""Guarda as instituições em uma lista, só para testar a interface."""
+# Valores que já vêm preenchidos na tela de conexão. Podem ser trocados na
+# própria tela, sem mexer no código.
+SERVIDOR = os.environ.get("CRUD_SERVIDOR", r"localhost\SQLEXPRESS")
+BANCO = os.environ.get("CRUD_BANCO", "BD2Trabalho")
 
-	def __init__(self):
-		# A lista começa vazia. Os dados reais vêm do banco na etapa da issue 20.
-		self.instituicoes = []
-		self.proximo_id = 1
+# Sem usuário e senha, a conexão usa o login do Windows (Autenticação do Windows),
+# o mesmo usado no SSMS.
+USUARIO = os.environ.get("CRUD_USUARIO", "")
+SENHA = os.environ.get("CRUD_SENHA", "")
+
+
+# =============================================================================
+# 2. DADOS (procedures do SQL Server)
+# =============================================================================
+class DadosSQLServer:
+	"""Faz as operações do CRUD chamando as procedures do banco."""
+
+	def __init__(self, servidor, banco, usuario="", senha=""):
+		import pyodbc
+		self.pyodbc = pyodbc
+		self.servidor = servidor
+		self.banco = banco
+		self.usuario = usuario
+		self.senha = senha
+		self.conexao = pyodbc.connect(self.montar_string_conexao(), autocommit=True, timeout=5)
+
+	def montar_string_conexao(self):
+		# Escolhe o driver ODBC mais novo que estiver instalado no computador
+		drivers = self.pyodbc.drivers()
+		preferidos = ["ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server", "SQL Server"]
+		driver = next((d for d in preferidos if d in drivers), None)
+		if driver is None:
+			raise RuntimeError("Nenhum driver ODBC do SQL Server foi encontrado neste computador.")
+
+		partes = [f"DRIVER={{{driver}}}", f"SERVER={self.servidor}", f"DATABASE={self.banco}"]
+		if self.usuario:
+			partes += [f"UID={self.usuario}", f"PWD={self.senha}"]
+		else:
+			partes.append("Trusted_Connection=yes")
+		if driver != "SQL Server":
+			partes.append("TrustServerCertificate=yes")  # mesmo que marcar "Confiar no certificado" no SSMS
+		return ";".join(partes)
+
+	def executar(self, sql, parametros=()):
+		# Executa a procedure e transforma o erro do banco em uma mensagem simples
+		try:
+			cursor = self.conexao.cursor()
+			cursor.execute(sql, parametros)
+			return cursor
+		except self.pyodbc.Error as erro:
+			raise ValueError(self.mensagem_do_banco(erro)) from None
+
+	@staticmethod
+	def mensagem_do_banco(erro):
+		# O erro vem assim: [Microsoft][ODBC Driver 18 ...][SQL Server]Mensagem (50104) (SQLExecDirectW)
+		# Aqui fica só a parte "Mensagem"
+		texto = str(erro.args[-1]) if erro.args else str(erro)
+		texto = texto.split("]")[-1]
+		texto = re.sub(r"\s*\(\d+\)\s*\(SQL\w+\)\s*$", "", texto)
+		return texto.strip()
 
 	def listar(self, filtro=""):
-		# Devolve as instituições cujo nome ou sigla contém o texto do filtro
-		filtro = filtro.lower()
-		return [i for i in self.instituicoes
-		        if filtro in i["nome"].lower() or filtro in i["sigla"].lower()]
+		cursor = self.executar("EXEC dbo.sp_instituicao_listar @filtro = ?", (filtro,))
+		return [{"id": r.id_instituicao, "nome": r.nome, "sigla": r.sigla,
+		         "tipo": r.tipo, "cidade": r.cidade, "estado": r.estado}
+		        for r in cursor.fetchall()]
 
 	def inserir(self, nome, sigla, tipo, cidade, estado):
-		# Mesma regra da restrição UNIQUE do banco: não pode repetir o nome
-		if any(i["nome"].lower() == nome.lower() for i in self.instituicoes):
-			raise ValueError("Já existe uma instituição com esse nome.")
-		self.instituicoes.append({"id": self.proximo_id, "nome": nome, "sigla": sigla,
-		                          "tipo": tipo, "cidade": cidade, "estado": estado})
-		self.proximo_id += 1
+		self.executar("EXEC dbo.sp_instituicao_inserir ?, ?, ?, ?, ?",
+		              (nome, sigla, tipo, cidade, estado))
 
 	def atualizar(self, id_instituicao, nome, sigla, tipo, cidade, estado):
-		if any(i["nome"].lower() == nome.lower() and i["id"] != id_instituicao for i in self.instituicoes):
-			raise ValueError("Já existe outra instituição com esse nome.")
-		for i in self.instituicoes:
-			if i["id"] == id_instituicao:
-				i.update(nome=nome, sigla=sigla, tipo=tipo, cidade=cidade, estado=estado)
-				return
-		raise ValueError("Instituição não encontrada.")
+		self.executar("EXEC dbo.sp_instituicao_atualizar ?, ?, ?, ?, ?, ?",
+		              (id_instituicao, nome, sigla, tipo, cidade, estado))
 
 	def excluir(self, id_instituicao):
-		self.instituicoes = [i for i in self.instituicoes if i["id"] != id_instituicao]
+		self.executar("EXEC dbo.sp_instituicao_excluir ?", (id_instituicao,))
 
 
 # =============================================================================
-# 2. TELA
+# 3. TELA DE CONEXÃO
+# =============================================================================
+class TelaConexao:
+	"""Janela que aparece ao abrir o programa, para escolher servidor e banco."""
+
+	def __init__(self, janela, ao_conectar):
+		self.ao_conectar = ao_conectar  # função chamada quando a conexão der certo
+		self.janela = tk.Toplevel(janela)
+		self.janela.title("UniConnect - Conectar ao banco")
+		self.janela.resizable(False, False)
+		self.janela.protocol("WM_DELETE_WINDOW", janela.destroy)  # fechar aqui fecha o programa
+
+		quadro = ttk.Frame(self.janela, padding=15)
+		quadro.pack(fill="both", expand=True)
+
+		self.var_servidor = tk.StringVar(value=SERVIDOR)
+		self.var_banco = tk.StringVar(value=BANCO)
+		self.var_usuario = tk.StringVar(value=USUARIO)
+		self.var_senha = tk.StringVar(value=SENHA)
+
+		ttk.Label(quadro, text="Servidor").grid(row=0, column=0, sticky="w")
+		campo_servidor = ttk.Entry(quadro, textvariable=self.var_servidor, width=35)
+		campo_servidor.grid(row=0, column=1, pady=3)
+
+		ttk.Label(quadro, text="Banco").grid(row=1, column=0, sticky="w")
+		ttk.Entry(quadro, textvariable=self.var_banco, width=35).grid(row=1, column=1, pady=3)
+
+		ttk.Label(quadro, text="Usuário").grid(row=2, column=0, sticky="w")
+		ttk.Entry(quadro, textvariable=self.var_usuario, width=35).grid(row=2, column=1, pady=3)
+
+		ttk.Label(quadro, text="Senha").grid(row=3, column=0, sticky="w")
+		ttk.Entry(quadro, textvariable=self.var_senha, width=35, show="*").grid(row=3, column=1, pady=3)
+
+		ttk.Label(quadro, text="Deixe usuário e senha em branco para usar o login do Windows.",
+		          foreground="#555555").grid(row=4, column=0, columnspan=2, sticky="w", pady=(4, 8))
+
+		self.btn_conectar = ttk.Button(quadro, text="Conectar", command=self.conectar)
+		self.btn_conectar.grid(row=5, column=0, columnspan=2)
+
+		self.janela.bind("<Return>", lambda _e: self.conectar())  # Enter também conecta
+		campo_servidor.focus()
+
+	def conectar(self):
+		servidor = self.var_servidor.get().strip()
+		banco = self.var_banco.get().strip()
+		if not servidor or not banco:
+			messagebox.showwarning("Campos obrigatórios", "Informe o servidor e o banco.", parent=self.janela)
+			return
+
+		self.btn_conectar.state(["disabled"])
+		self.janela.config(cursor="watch")
+		self.janela.update()
+		try:
+			dados = DadosSQLServer(servidor, banco, self.var_usuario.get().strip(), self.var_senha.get())
+		except Exception as erro:
+			messagebox.showerror("Erro de conexão",
+			                     f"Não foi possível conectar no banco {banco} do servidor {servidor}.\n\n"
+			                     "Confira se o SQL Server está ligado e se o nome do servidor e do banco "
+			                     "estão certos (são os mesmos usados no SSMS).\n\n"
+			                     f"Detalhe: {erro}", parent=self.janela)
+			return
+		finally:
+			self.btn_conectar.state(["!disabled"])
+			self.janela.config(cursor="")
+
+		self.janela.destroy()
+		self.ao_conectar(dados)
+
+
+# =============================================================================
+# 4. TELA DO CRUD
 # =============================================================================
 class TelaInstituicao:
 
@@ -286,5 +413,20 @@ class TelaInstituicao:
 # =============================================================================
 if __name__ == "__main__":
 	janela = tk.Tk()
-	TelaInstituicao(janela, DadosMemoria())
+	janela.withdraw()  # a tela do CRUD só aparece depois de conectar
+
+	# Confere se a biblioteca de conexão está instalada
+	try:
+		import pyodbc  # noqa: F401
+	except ImportError:
+		messagebox.showerror("Biblioteca não instalada",
+		                     "A biblioteca pyodbc não está instalada.\n\n"
+		                     "Abra o Prompt de Comando e rode:\npython -m pip install pyodbc")
+		raise SystemExit(1)
+
+	def abrir_crud(dados):
+		janela.deiconify()
+		TelaInstituicao(janela, dados)
+
+	TelaConexao(janela, abrir_crud)
 	janela.mainloop()
